@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>구분구적법으로 구의 부피 구하기</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#f2f5f9;--ink:#14202e;--mute:#5b6b7d;--line:#d5dde7;--card:#fff;--slice:#2f6fde;--sliceA:rgba(47,111,222,.22);--hi:#e08a00;--hiA:rgba(224,138,0,.45);--curve:#14202e;--ok:#0f766e;--cut:#1d9e75;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1620;--ink:#e6edf5;--mute:#93a3b5;--line:#2a3646;--card:#18222f;--slice:#6aa0ff;--sliceA:rgba(106,160,255,.25);--hi:#f5b041;--hiA:rgba(245,176,65,.5);--curve:#e6edf5;--ok:#4fd1c0;--cut:#4fd1c0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1620;--ink:#e6edf5;--mute:#93a3b5;--line:#2a3646;--card:#18222f;--slice:#6aa0ff;--sliceA:rgba(106,160,255,.25);--hi:#f5b041;--hiA:rgba(245,176,65,.5);--curve:#e6edf5;--ok:#4fd1c0;--cut:#4fd1c0;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Noto Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif}
+main{max-width:940px;margin:0 auto;padding:26px 16px 56px}
+h1{font-size:1.5rem;line-height:1.3;margin:0 0 4px;font-weight:700}
+h2{font-size:1rem;margin:0 0 8px;font-weight:700}
+.sub{color:var(--mute);margin:0 0 18px;font-size:.93rem}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:14px}
+@media(min-width:780px){.g2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.bar>div{flex:1 1 150px}
+label{display:block;font-size:.82rem;color:var(--mute);margin:0 0 4px}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+input[type=range]{padding:0;accent-color:var(--slice)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--slice);outline-offset:2px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+button{font:500 .9rem "Noto Sans KR",sans-serif;border-radius:6px;padding:7px 12px;border:1px solid var(--slice);cursor:pointer;background:var(--slice);color:#fff}
+button.alt{background:transparent;color:var(--slice)}
+canvas,svg{width:100%;height:auto;display:block}
+.note{font-size:.8rem;color:var(--mute);margin:6px 0 0}
+.info{font-size:.92rem;line-height:1.8;margin:8px 0 0;font-variant-numeric:tabular-nums}
+.info b{color:var(--hi);font-weight:500}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:.93rem}
+dt{color:var(--mute)}dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:500;overflow-wrap:anywhere}
+.big{font-size:1.7rem;font-weight:700;color:var(--ok)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:6px 10px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mute);font-weight:500}
+tr.on td{background:var(--hiA)}
+.t{font:13px "Noto Sans KR",sans-serif;fill:var(--ink)}.ts{font:12px "Noto Sans KR",sans-serif;fill:var(--mute)}
+</style>
+</head>
+<body>
+<main>
+<h1>구분구적법으로 구의 부피 구하기</h1>
+<p class="sub">반구를 얇은 원판 n개로 쪼개 부피를 더합니다. 단면의 넓이는 S(x) = π(1 − x²)입니다.</p>
+<section class="box">
+  <div class="bar">
+    <div><label for="n">등분 수 n</label><input id="n" type="number" min="1" max="10000000" step="1" value="8"></div>
+    <div><label for="mode">단면을 재는 위치</label><select id="mode"><option value="right">오른쪽 끝 (k/n)</option><option value="mid">가운데 ((k−0.5)/n)</option><option value="left">왼쪽 끝 ((k−1)/n)</option></select></div>
+    <div><label for="pi">π의 값</label><select id="pi"><option value="3.14">3.14</option><option value="exact">정확한 π</option></select></div>
+  </div>
+  <div class="chips" id="chips"></div>
+</section>
+<div class="grid g2">
+  <section class="box">
+    <h2>① 구를 자르는 모습</h2>
+    <svg id="s3" viewBox="0 0 600 400" role="img" aria-label="구와 x=xk 평면으로 자른 단면"></svg>
+    <p class="note">파란 평면 x = xₖ로 자르면 초록 원이 나옵니다. 주황 삼각형에서 a² + r² = 1입니다.</p>
+  </section>
+  <section class="box">
+    <h2>② 조각으로 근사하기</h2>
+    <canvas id="cv" width="600" height="400" role="img" aria-label="반원 단면과 직사각형 근사"></canvas>
+    <label for="k" style="margin-top:10px">k번째 조각 보기</label>
+    <input id="k" type="range" min="1" max="8" step="1" value="3">
+    <p class="info" id="info"></p>
+  </section>
+</div>
+<section class="box grid" style="margin-top:14px">
+  <h2 style="margin:0">③ 계산 결과</h2>
+  <dl>
+    <dt>반구의 근삿값 Vₙ = Σ S(xₖ)·(1/n)</dt><dd class="big" id="vn">–</dd>
+    <dt>반구의 이론값 2π/3</dt><dd id="th">–</dd>
+    <dt>오차 (이론값 − Vₙ)</dt><dd id="er">–</dd>
+    <dt>오차 × n</dt><dd id="en">–</dd>
+    <dt>구 전체 2Vₙ (공식 4π/3)</dt><dd id="full">–</dd>
+  </dl>
+</section>
+<div class="grid g2">
+  <section class="box"><h2>④ n이 커질 때 Vₙ의 변화</h2><canvas id="ch" width="600" height="340" role="img" aria-label="n에 따른 Vn의 수렴 그래프"></canvas><p class="note">가로축은 n(로그 눈금), 점선은 이론값입니다.</p></section>
+  <section class="box"><h2>⑤ 조각별 계산표</h2><div class="tw"><table><thead><tr><th>k</th><th>xₖ</th><th>S(xₖ)</th><th>부피</th></tr></thead><tbody id="tb2"></tbody></table></div><p class="note" id="tn2"></p></section>
+</div>
+<section class="box" style="margin-top:14px">
+  <h2>⑥ 보고서용 표</h2>
+  <div class="chips" style="margin:0 0 10px"><button id="tab">n = 100, 10000, 1000000 계산</button><button id="cp" class="alt">표 복사</button></div>
+  <div class="tw" id="tw" hidden><table><thead><tr><th>n</th><th>Vₙ</th><th>이론값과의 오차</th><th>오차 × n</th></tr></thead><tbody id="tb"></tbody></table></div>
+</section>
+</main>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)},M=40,AZ=30*Math.PI/180,EL=20*Math.PI/180;
+function P(){return $("pi").value==="exact"?Math.PI:3.14}
+function N(){var n=Math.round(parseFloat($("n").value));return n>=1?Math.min(n,1e7):1}
+function xk(k,m,mode){return(mode==="right"?k:mode==="mid"?k-0.5:k-1)/m}
+function calc(n,mode,pi){var V=0,k,x;for(k=1;k<=n;k++){x=xk(k,n,mode);V+=pi*(1-x*x)/n}return V}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v)}
+function pr(x,y,z){var a=x*Math.cos(AZ)+y*Math.sin(AZ),b=-x*Math.sin(AZ)+y*Math.cos(AZ);return[300+150*a,200-150*(z*Math.cos(EL)+b*Math.sin(EL))]}
+function pts(f){var s=[],t,p;for(t=0;t<=360;t+=6){p=f(t*Math.PI/180);s.push(p[0].toFixed(1)+","+p[1].toFixed(1))}return s.join(" ")}
+function pl(a){return a.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1)}).join(" ")}
+function tx(p,dx,dy,s,c,an){return'<text class="'+c+'" x="'+(p[0]+dx).toFixed(1)+'" y="'+(p[1]+dy).toFixed(1)+'" text-anchor="'+(an||"middle")+'">'+s+'</text>'}
+function ln(a,b,st){return'<line x1="'+a[0].toFixed(1)+'" y1="'+a[1].toFixed(1)+'" x2="'+b[0].toFixed(1)+'" y2="'+b[1].toFixed(1)+'" '+st+'/>'}
+function d3(a){
+  var r=Math.sqrt(Math.max(0,1-a*a)),O=pr(0,0,0),Mp=pr(a,0,0),Q=pr(a,r,0),L=1.4,F=1.2,g='',ax='stroke="var(--mute)" stroke-width="1"';
+  g+='<circle cx="300" cy="200" r="150" fill="#888780" fill-opacity=".08" stroke="#888780"/>';
+  g+='<polygon points="'+pl([pr(a,-F,-F),pr(a,F,-F),pr(a,F,F),pr(a,-F,F)])+'" fill="#378ADD" fill-opacity=".12" stroke="#378ADD" stroke-dasharray="5 4"/>';
+  g+=ln(pr(-L,0,0),pr(L,0,0),ax)+ln(pr(0,-L,0),pr(0,L,0),ax)+ln(pr(0,0,-L),pr(0,0,L),ax);
+  g+=tx(pr(L,0,0),10,4,"x","t","start")+tx(pr(0,L,0),8,-4,"y","t","start")+tx(pr(0,0,L),0,-8,"z","t");
+  g+='<polyline points="'+pts(function(t){return pr(a,r*Math.cos(t),r*Math.sin(t))})+'" fill="#1D9E75" fill-opacity=".3" stroke="#1D9E75" stroke-width="2"/>';
+  g+='<polygon points="'+pl([O,Mp,Q])+'" fill="#EF9F27" fill-opacity=".4" stroke="#BA7517" stroke-width="1.6"/>';
+  g+=tx(O,-4,15,"O","ts","end")+tx([(O[0]+Mp[0])/2,(O[1]+Mp[1])/2],0,-7,"a","t")+tx([(Mp[0]+Q[0])/2,(Mp[1]+Q[1])/2],10,4,"r","t","start")+tx([(O[0]+Q[0])/2,(O[1]+Q[1])/2],-6,-7,"1","t","end");
+  $("s3").innerHTML=g;
+}
+function slices(m,mode,k){
+  var c=$("cv"),g=c.getContext("2d"),W=c.width,H=c.height,mg=44,s=Math.min(W-2*mg,H-2*mg),i,x,h,y0=H-mg,dx=1/m;
+  g.clearRect(0,0,W,H);
+  for(i=1;i<=m;i++){x=xk(i,m,mode);h=Math.sqrt(Math.max(0,1-x*x));
+    g.fillStyle=i===k?css("--hiA"):css("--sliceA");g.strokeStyle=i===k?css("--hi"):css("--slice");g.lineWidth=i===k?2:1;
+    g.fillRect(mg+(i-1)*dx*s,y0-h*s,dx*s,h*s);g.strokeRect(mg+(i-1)*dx*s,y0-h*s,dx*s,h*s)}
+  g.strokeStyle=css("--curve");g.lineWidth=2;g.beginPath();
+  for(i=0;i<=200;i++){x=i/200;h=Math.sqrt(1-x*x);g[i?"lineTo":"moveTo"](mg+x*s,y0-h*s)}g.stroke();
+  g.strokeStyle=css("--mute");g.lineWidth=1;g.beginPath();g.moveTo(mg-8,y0);g.lineTo(mg+s+14,y0);g.moveTo(mg,y0+8);g.lineTo(mg,y0-s-14);g.stroke();
+  g.fillStyle=css("--mute");g.font="14px sans-serif";g.fillText("0",mg-4,y0+24);g.fillText("1",mg+s-4,y0+24);g.fillText("x",mg+s+10,y0+22);g.fillText("y = √(1−x²)",mg+s*0.5,y0-s*0.92);
+  x=xk(k,m,mode);g.fillStyle=css("--hi");g.fillText("x"+"ₖ",mg+x*s-6,y0+24);g.beginPath();g.arc(mg+x*s,y0,4,0,7);g.fill();
+}
+function chart(mode,pi){
+  var c=$("ch"),g=c.getContext("2d"),W=c.width,H=c.height,l=52,r=16,t=16,b=40,ns=[1,2,3,5,10,20,50,100,200,500,1e3,2e3,5e3,1e4,1e5],i,X=function(n){return l+(Math.log10(n)/5)*(W-l-r)},Y=function(v){return H-b-(v/3.4)*(H-t-b)};
+  function f(n){return pi*(mode==="right"?2/3-1/(2*n)-1/(6*n*n):mode==="mid"?2/3+1/(12*n*n):2/3+1/(2*n)-1/(6*n*n))}
+  g.clearRect(0,0,W,H);g.strokeStyle=css("--line");g.fillStyle=css("--mute");g.font="13px sans-serif";g.lineWidth=1;
+  for(i=0;i<=3;i++){g.beginPath();g.moveTo(l,Y(i));g.lineTo(W-r,Y(i));g.stroke();g.fillText(i,l-18,Y(i)+4)}
+  for(i=0;i<=5;i++){g.fillText(i?"10^"+i:"1",X(Math.pow(10,i))-8,H-b+20)}
+  g.strokeStyle=css("--ok");g.setLineDash([6,4]);g.beginPath();g.moveTo(l,Y(2*pi/3));g.lineTo(W-r,Y(2*pi/3));g.stroke();g.setLineDash([]);
+  g.fillStyle=css("--ok");g.fillText("2π/3",W-r-44,Y(2*pi/3)-6);
+  g.strokeStyle=css("--slice");g.lineWidth=2;g.beginPath();ns.forEach(function(n,j){g[j?"lineTo":"moveTo"](X(n),Y(f(n)))});g.stroke();
+  g.fillStyle=css("--slice");ns.forEach(function(n){g.beginPath();g.arc(X(n),Y(f(n)),3,0,7);g.fill()});
+}
+function run(){
+  var n=N(),mode=$("mode").value,pi=P(),m=Math.min(n,M),kk=$("k"),k,V=calc(n,mode,pi),T=2*pi/3,i,h="",x,S;
+  kk.max=m;if(+kk.value>m)kk.value=m;k=Math.max(1,Math.min(+kk.value,m));
+  $("vn").textContent=V.toFixed(6);$("th").textContent=T.toFixed(6);$("er").textContent=(T-V).toFixed(7);$("en").textContent=((T-V)*n).toFixed(4);$("full").textContent=(2*V).toFixed(6)+" ("+(4*pi/3).toFixed(6)+")";
+  x=xk(k,m,mode);S=pi*(1-x*x);
+  $("info").innerHTML="<b>"+k+"번째 조각</b> (그림은 "+m+"조각 기준)<br>두께 Δx = 1/"+m+" = "+(1/m).toFixed(4)+"<br>xₖ = "+x.toFixed(4)+" → S(xₖ) = π(1−xₖ²) = "+S.toFixed(4)+"<br>조각의 부피 = S(xₖ)·Δx = "+(S/m).toFixed(5);
+  for(i=1;i<=m;i++){x=xk(i,m,mode);S=pi*(1-x*x);if(m<=12||i===k||i===1||i===m)h+='<tr'+(i===k?' class="on"':'')+'><td>'+i+'</td><td>'+x.toFixed(4)+'</td><td>'+S.toFixed(4)+'</td><td>'+(S/m).toFixed(5)+'</td></tr>'}
+  $("tb2").innerHTML=h;$("tn2").textContent=m<=12?"부피의 합 = "+(function(){var s=0,j;for(j=1;j<=m;j++){var y=xk(j,m,mode);s+=pi*(1-y*y)/m}return s.toFixed(6)})():"조각이 많아 처음, 선택한, 마지막 조각만 보여 줍니다.";
+  d3(xk(k,m,mode));slices(m,mode,k);chart(mode,pi);
+}
+var last="";
+function table(){
+  var mode=$("mode").value,pi=P(),T=2*pi/3,h="",t="n\tVn\t오차\t오차×n\n";
+  [100,10000,1000000].forEach(function(n){var V=calc(n,mode,pi),e=T-V;h+="<tr><td>"+n+"</td><td>"+V.toFixed(6)+"</td><td>"+e.toFixed(7)+"</td><td>"+(e*n).toFixed(4)+"</td></tr>";t+=n+"\t"+V.toFixed(6)+"\t"+e.toFixed(7)+"\t"+(e*n).toFixed(4)+"\n"});
+  $("tb").innerHTML=h;$("tw").hidden=false;last=t;
+}
+[4,8,10,40,100,10000,1000000].forEach(function(n){var b=document.createElement("button");b.className="alt";b.textContent="n = "+n;b.onclick=function(){$("n").value=n;run()};$("chips").appendChild(b)});
+$("n").oninput=run;$("mode").onchange=run;$("pi").onchange=run;$("k").oninput=run;$("tab").onclick=table;
+$("cp").onclick=function(){if(!last)table();try{navigator.clipboard.writeText(last).then(function(){$("cp").textContent="복사됨"},function(){$("cp").textContent="복사 실패"})}catch(e){$("cp").textContent="복사 실패"}};
+run();
+})();
+</script>
+</body>
+</html>
